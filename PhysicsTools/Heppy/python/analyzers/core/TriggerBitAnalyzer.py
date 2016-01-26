@@ -9,9 +9,9 @@ class TriggerBitAnalyzer( Analyzer ):
     def __init__(self, cfg_ana, cfg_comp, looperName ):
         super(TriggerBitAnalyzer,self).__init__(cfg_ana,cfg_comp,looperName)
         self.processName = getattr(self.cfg_ana,"processName","HLT")
-        self.prescaleProcessName = getattr(self.cfg_ana,"prescaleProcessName","RECO")
+        self.prescaleProcessName = getattr(self.cfg_ana,"prescaleProcessName","PAT")
         self.fallbackName = getattr(self.cfg_ana,"fallbackProcessName",None)
-        self.prescaleFallbackName = getattr(self.cfg_ana,"prescaleFallbackProcessName",None)
+        self.prescaleFallbackName = getattr(self.cfg_ana,"prescaleFallbackProcessName","RECO")
         self.outprefix   = getattr(self.cfg_ana,"outprefix",  self.processName)
         self.unrollbits = ( hasattr(self.cfg_ana,"unrollbits") and self.cfg_ana.unrollbits )
         self.saveIsUnprescaled = getattr(self.cfg_ana,"saveIsUnprescaled",False)
@@ -55,15 +55,15 @@ class TriggerBitAnalyzer( Analyzer ):
                                 setup.globalVariables = []
                             if outname[-1] == '*' :
                                 outname=outname[0:-1]
-                            setup.globalVariables.append( NTupleVariable(outname, eval("lambda ev: ev.%s" % outname), help="Trigger bit  %s"%TP) )
-                            if self.saveIsUnprescaled or self.force1prescale: setup.globalVariables.append( NTupleVariable(outname+'_isUnprescaled', eval("lambda ev: ev.%s_isUnprescaled" % outname), help="Trigger bit  %s isUnprescaled flag"%TP) )
+                            setup.globalVariables.append( NTupleVariable(outname, eval("lambda ev: ev.%s" % outname), int, help="Trigger bit  %s"%TP) )
+                            if self.saveIsUnprescaled or self.force1prescale: setup.globalVariables.append( NTupleVariable(outname+'_isUnprescaled', eval("lambda ev: ev.%s_isUnprescaled" % outname), int, help="Trigger bit  %s isUnprescaled flag"%TP) )
                             self.triggerBitCheckersSingleBits.append( (TP, ROOT.heppy.TriggerBitChecker(trigVecBit)) )
 
                 outname="%s_%s"%(self.outprefix,T)  
                 if not hasattr(setup ,"globalVariables") :
                         setup.globalVariables = []
-                setup.globalVariables.append( NTupleVariable(outname, eval("lambda ev: ev.%s" % outname), help="OR of %s"%TL) )
-                if self.saveIsUnprescaled or self.force1prescale: setup.globalVariables.append( NTupleVariable(outname+'_isUnprescaled', eval("lambda ev: ev.%s_isUnprescaled" % outname), help="OR of %s is Unprescaled flag"%TL) )
+                setup.globalVariables.append( NTupleVariable(outname, eval("lambda ev: ev.%s" % outname), int, help="OR of %s"%TL) )
+                if self.saveIsUnprescaled or self.force1prescale: setup.globalVariables.append( NTupleVariable(outname+'_isUnprescaled', eval("lambda ev: ev.%s_isUnprescaled" % outname), int, help="OR of %s is Unprescaled flag"%TL) )
                 self.triggerBitCheckers.append( (T, ROOT.heppy.TriggerBitChecker(trigVec)) )
                 
 
@@ -105,6 +105,11 @@ class TriggerBitAnalyzer( Analyzer ):
 setattr(TriggerBitAnalyzer,"defaultConfig",cfg.Analyzer(
     TriggerBitAnalyzer, name="TriggerFlags",
     processName = 'HLT',
+    prescaleProcessName = 'PAT',
+    prescaleFallbackProcessName = 'RECO',
+    unrollbits = False,
+    saveIsUnprescaled = False,
+    checkL1prescale = False,
     triggerBits = {
         # "<name>" : [ 'HLT_<Something>_v*', 'HLT_<SomethingElse>_v*' ] 
 }
@@ -114,6 +119,8 @@ setattr(TriggerBitAnalyzer,"defaultEventFlagsConfig",cfg.Analyzer(
     TriggerBitAnalyzer, name="EventFlags",
     processName = 'PAT',
     fallbackProcessName = 'RECO',
+    unrollbits = False,
+    saveIsUnprescaled = False,
     outprefix   = 'Flag',
     triggerBits = {
         "HBHENoiseFilter" : [ "Flag_HBHENoiseFilter" ],

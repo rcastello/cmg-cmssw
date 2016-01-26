@@ -113,11 +113,13 @@ genAna = cfg.Analyzer(
     # Make also the splitted lists
     makeSplittedGenLists = True,
     allGenTaus = False,
-    # Save LHE weights from LHEEventProduct
-    makeLHEweights = False,
     # Print out debug information
     verbose = False,
     )
+
+lheWeightAna = cfg.Analyzer(
+    LHEWeightAnalyzer, name="LHEWeightAnalyzer",
+)
 
 
 ## Gen Info Analyzer
@@ -136,8 +138,8 @@ lepAna = cfg.Analyzer(
     # input collections
     muons='slimmedMuons',
     electrons='slimmedElectrons',
-    rhoMuon= 'fixedGridRhoFastjetAll',
-    rhoElectron = 'fixedGridRhoFastjetAll',
+    rhoMuon= 'fixedGridRhoFastjetCentralNeutral',
+    rhoElectron = 'fixedGridRhoFastjetCentralNeutral',
     # energy scale corrections and ghost muon suppression (off by default)
     doMuScleFitCorrections=False, # "rereco"
     doRochesterCorrections=False,
@@ -158,14 +160,14 @@ lepAna = cfg.Analyzer(
     loose_muon_relIso = 0.5,
     muon_dxydz_track = "innerTrack",
     # inclusive very loose electron selection
-    inclusive_electron_id  = "POG_Cuts_ID_PHYS14_25ns_v1_ConvVetoDxyDz_Veto_full5x5",
+    inclusive_electron_id  = "POG_Cuts_ID_SPRING15_25ns_v1_ConvVetoDxyDz_Veto_full5x5",
     inclusive_electron_pt  = 10,
     inclusive_electron_eta = 2.5,
     inclusive_electron_dxy = 0.5,
     inclusive_electron_dz  = 1.0,
     inclusive_electron_lostHits = 1.0,
     # loose electron selection
-    loose_electron_id     = "POG_Cuts_ID_PHYS14_25ns_v1_ConvVetoDxyDz_Veto_full5x5",
+    loose_electron_id     = "POG_Cuts_ID_SPRING15_25ns_v1_ConvVetoDxyDz_Veto_full5x5",
     loose_electron_pt     = 10,
     loose_electron_eta    = 2.4,
     loose_electron_dxy    = 0.05,
@@ -173,16 +175,16 @@ lepAna = cfg.Analyzer(
     loose_electron_relIso = 0.5,
     loose_electron_lostHits = 1.0,
     # muon isolation correction method (can be "rhoArea" or "deltaBeta")
-    mu_isoCorr = "rhoArea" ,
-    mu_effectiveAreas = "Phys14_25ns_v1", #(can be 'Data2012' or 'Phys14_25ns_v1')
+    mu_isoCorr = "deltaBeta" ,
+    mu_effectiveAreas = "Spring15_25ns_v1", #(can be 'Data2012' or 'Phys14_25ns_v1')
     # electron isolation correction method (can be "rhoArea" or "deltaBeta")
-    ele_isoCorr = "rhoArea" ,
-    ele_effectiveAreas = "Phys14_25ns_v1" , #(can be 'Data2012' or 'Phys14_25ns_v1')
+    ele_isoCorr = "deltaBeta" ,
+    ele_effectiveAreas = "Spring15_25ns_v1" , #(can be 'Data2012' or 'Phys14_25ns_v1')
     ele_tightId = "Cuts_PHYS14_25ns_v1_ConvVetoDxyDz" ,
     # Mini-isolation, with pT dependent cone: will fill in the miniRelIso, miniRelIsoCharged, miniRelIsoNeutral variables of the leptons (see https://indico.cern.ch/event/368826/ )
     doMiniIsolation = False, # off by default since it requires access to all PFCandidates 
     packedCandidates = 'packedPFCandidates',
-    miniIsolationPUCorr = 'rhoArea', # Allowed options: 'rhoArea' (EAs for 03 cone scaled by R^2), 'deltaBeta', 'raw' (uncorrected), 'weights' (delta beta weights; not validated)
+    miniIsolationPUCorr = 'deltaBeta', # Allowed options: 'rhoArea' (EAs for 03 cone scaled by R^2), 'deltaBeta', 'raw' (uncorrected), 'weights' (delta beta weights; not validated)
     miniIsolationVetoLeptons = None, # use 'inclusive' to veto inclusive leptons and their footprint in all isolation cones
     # minimum deltaR between a loose electron and a loose muon (on overlaps, discard the electron)
     min_dr_electron_muon = 0.02,
@@ -190,9 +192,6 @@ lepAna = cfg.Analyzer(
     do_mc_match = True, # note: it will in any case try it only on MC, not on data
     match_inclusiveLeptons = False, # match to all inclusive leptons
     )
-
-lepAna.mu_isoCorr = "deltaBeta"
-lepAna.ele_isoCorr = "deltaBeta"
 
 ## Lepton-based Skim (generic, but requirements depend on the final state)
 from CMGTools.TTHAnalysis.analyzers.ttHLepSkimmer import ttHLepSkimmer
@@ -210,9 +209,10 @@ photonAna = cfg.Analyzer(
     photons='slimmedPhotons',
     ptMin = 30,
     etaMax = 2.5,
-    gammaID = "POG_PHYS14_25ns_Loose",
+    gammaID = "POG_SPRING15_50ns_Tight",
     rhoPhoton = 'fixedGridRhoFastjetAll',
     gamma_isoCorr = 'rhoArea',
+    conversionSafe_eleVeto = False,
     do_mc_match = False,
     do_randomCone = False,
 )
@@ -235,8 +235,10 @@ metAna = cfg.Analyzer(
     doMetNoMu = False,
     doMetNoEle = False,
     doMetNoPhoton = False,
-    recalibrate = False,
-    jetAnalyzerCalibrationPostFix = "",
+    recalibrate = True, # or "type1", or True
+    applyJetSmearing = False, # does nothing unless the jet smearing is turned on in the jet analyzer
+    old74XMiniAODs = False, # set to True to get the correct Raw MET when running on old 74X MiniAODs
+    jetAnalyzerPostFix = "",
     candidates='packedPFCandidates',
     candidatesTypes='std::vector<pat::PackedCandidate>',
     dzMax = 0.1,
@@ -255,8 +257,10 @@ metNoHFAna = cfg.Analyzer(
     doMetNoMu = False,
     doMetNoEle = False,
     doMetNoPhoton = False,
-    recalibrate = False,
-    jetAnalyzerCalibrationPostFix = "",
+    recalibrate = True, # or "type1", or True
+    applyJetSmearing = False, # does nothing unless the jet smearing is turned on in the jet analyzer
+    old74XMiniAODs = False, # set to True to get the correct Raw MET when running on old 74X MiniAODs
+    jetAnalyzerPostFix = "",
     candidates='packedPFCandidates',
     candidatesTypes='std::vector<pat::PackedCandidate>',
     dzMax = 0.1,
@@ -278,6 +282,8 @@ metPuppiAna = cfg.Analyzer(
     doMetNoEle = False,
     doMetNoPhoton = False,
     recalibrate = False,
+    applyJetSmearing = False, # does nothing unless the jet smearing is turned on in the jet analyzer
+    old74XMiniAODs = False, # set to True to get the correct Raw MET when running on old 74X MiniAODs
     jetAnalyzerCalibrationPostFix = "",
     candidates='packedPFCandidates',
     candidatesTypes='std::vector<pat::PackedCandidate>',
@@ -326,11 +332,11 @@ jetAna = cfg.Analyzer(
     recalibrateJets = True, #'MC', # True, False, 'MC', 'Data'
     applyL2L3Residual = True, # Switch to 'Data' when they will become available for Data
     recalibrationType = "AK4PFchs",
-    mcGT     = "Summer15_50nsV2_MC",
-    dataGT   = "Summer15_50nsV5_MC",
+    mcGT     = "Summer15_25nsV6_MC",
+    dataGT   = "Summer15_25nsV6_DATA",
     jecPath = "${CMSSW_BASE}/src/CMGTools/RootTools/data/jec/",
     shiftJEC = 0, # set to +1 or -1 to apply +/-1 sigma shift to the nominal jet energies
-    addJECShifts = False, # if true, add  "corr", "corrJECUp", and "corrJECDown" for each jet (requires uncertainties to be available!)
+    addJECShifts = True, # if true, add  "corr", "corrJECUp", and "corrJECDown" for each jet (requires uncertainties to be available!)
     smearJets = False,
     shiftJER = 0, # set to +1 or -1 to get +/-1 sigma shifts
     alwaysCleanPhotons = False,
@@ -340,6 +346,9 @@ jetAna = cfg.Analyzer(
     doQG = False,
     do_mc_match = False,
     cleanGenJetsFromPhoton = False,
+    calculateSeparateCorrections = True, # should be True if recalibrateJets is True, otherwise L1s will be inconsistent
+    calculateType1METCorrection  = False,
+    type1METParams = { 'jetPtThreshold':15., 'skipEMfractionThreshold':0.9, 'skipMuons':True },
     collectionPostFix = ""
     )
 
@@ -362,6 +371,7 @@ ttHJetMETSkim = cfg.Analyzer(
 
 
 metCoreSequence = [
+    lheWeightAna,
     susyCounter,
     skimAnalyzer,
    #eventSelector,
@@ -378,7 +388,7 @@ metCoreSequence = [
 ##### photon modules below
     photonAna,
 ##### jet modules below
-   #jetAna,
+    jetAna,
 ##### met modules below
     metAna,
     metNoHFAna,

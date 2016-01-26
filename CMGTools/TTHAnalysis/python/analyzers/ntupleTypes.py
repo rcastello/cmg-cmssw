@@ -5,6 +5,7 @@ from PhysicsTools.Heppy.analyzers.objects.autophobj import  *
 from PhysicsTools.HeppyCore.utils.deltar import deltaR
 
 from CMGTools.TTHAnalysis.signedSip import *
+from CMGTools.TTHAnalysis.tools.emulateElectronTriggerCuts import _susy2lss_idEmu_cuts,_susy2lss_idIsoEmu_cuts
 
 ##------------------------------------------  
 ## LEPTON
@@ -49,6 +50,7 @@ leptonTypeSusyExtra = NTupleObjectType("leptonSusyExtra", baseObjectTypes = [ le
     NTupleVariable("jetNDauCharged",    lambda lepton : sum(x.charge()!=0 for x in lepton.jet.daughterPtrVector()) if hasattr(lepton,'jet') and lepton.jet != lepton else -1, help="n charged daughters of nearest jet"),
     NTupleVariable("jetNDauPV",    lambda lepton : sum(x.charge()!=0 and x.fromPV()==3 for x in lepton.jet.daughterPtrVector()) if hasattr(lepton,'jet') and lepton.jet != lepton else -1, help="n charged daughters from PV of nearest jet"),
     NTupleVariable("jetNDauNotPV",    lambda lepton : sum(x.charge()!=0 and x.fromPV()<=2 for x in lepton.jet.daughterPtrVector()) if hasattr(lepton,'jet') and lepton.jet != lepton else -1, help="n charged daughters from PV of nearest jet"),
+    NTupleVariable("jetNDauChargedMVASel",    lambda lepton : sum((deltaR(x.eta(),x.phi(),lepton.jet.eta(),lepton.jet.phi())<=0.4 and x.charge()!=0 and x.fromPV()>1 and qualityTrk(x.pseudoTrack(),lepton.associatedVertex)) for x in lepton.jet.daughterPtrVector()) if hasattr(lepton,'jet') and lepton.jet != lepton else 0, help="n charged daughters (with selection for ttH lepMVA) of nearest jet"),
     NTupleVariable("jetmaxSignedSip3D",    lambda lepton :  maxSignedSip3Djettracks(lepton), help="max signed Sip3D among jet's tracks"),
     NTupleVariable("jetmaxSip3D",    lambda lepton :   maxSip3Djettracks(lepton), help="max Sip3D among jet's tracks"),
     NTupleVariable("jetmaxSignedSip2D",    lambda lepton  : maxSignedSip2Djettracks(lepton) , help="max signed Sip2D among jet's tracks"),
@@ -73,6 +75,13 @@ leptonTypeSusyExtra = NTupleObjectType("leptonSusyExtra", baseObjectTypes = [ le
     NTupleVariable("jetCorrFactor_L1L2L3Res", lambda x: x.jet.CorrFactor_L1L2L3Res if hasattr(x.jet,'CorrFactor_L1L2L3Res') else 1, help="matched jet L1L2L3Res correction factor"),        
     NTupleVariable("jetPtRatio_Raw", lambda lepton : -1 if not hasattr(lepton,'jet') else lepton.pt()/lepton.jet.pt() if not hasattr(lepton.jet,'rawFactor') else lepton.pt()/(lepton.jet.pt()*lepton.jet.rawFactor()), help="pt(lepton)/rawpt(nearest jet)"),
     NTupleVariable("jetPtRelHv2", lambda lepton : ptRelHv2(lepton) if hasattr(lepton,'jet') else -1, help="pt of the jet (subtracting the lepton) transverse to the lepton axis - v2"),
+    # variables for isolated electron trigger matching cuts
+    NTupleVariable("ecalPFClusterIso", lambda lepton :  lepton.ecalPFClusterIso() if abs(lepton.pdgId())==11 else -999, help="Electron ecalPFClusterIso"),
+    NTupleVariable("hcalPFClusterIso", lambda lepton :  lepton.hcalPFClusterIso() if abs(lepton.pdgId())==11 else -999, help="Electron hcalPFClusterIso"),
+    NTupleVariable("dr03TkSumPt", lambda lepton: lepton.dr03TkSumPt() if abs(lepton.pdgId())==11 else -999, help="Electron dr03TkSumPt isolation"),
+    NTupleVariable("trackIso", lambda lepton :  lepton.trackIso() if abs(lepton.pdgId())==11 else -999, help="Electron trackIso (in cone of 0.4)"),
+    NTupleVariable("idEmu", lambda lepton: _susy2lss_idEmu_cuts(lepton), help="Electron pass trigger ID emulation cuts"),
+    NTupleVariable("idIsoEmu", lambda lepton: _susy2lss_idIsoEmu_cuts(lepton), help="Electron pass trigger ID+ISO emulation cuts"),
 ])
 leptonTypeSusyExtra.addSubObjects([
         NTupleSubObject("jetLepAwareJEC",lambda x: jetLepAwareJEC(x), tlorentzFourVectorType)

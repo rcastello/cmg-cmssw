@@ -7,7 +7,7 @@ from PhysicsTools.Heppy.physicsobjects.Muon import Muon
 from PhysicsTools.HeppyCore.utils.deltar import bestMatch
 from PhysicsTools.Heppy.physicsutils.RochesterCorrections import rochcor
 from PhysicsTools.Heppy.physicsutils.MuScleFitCorrector   import MuScleFitCorr
-from PhysicsTools.Heppy.physicsutils.ElectronCalibrator import EmbeddedElectronCalibrator
+from PhysicsTools.Heppy.physicsutils.ElectronCalibrator import Run2ElectronCalibrator
 #from CMGTools.TTHAnalysis.electronCalibrator import ElectronCalibrator
 import PhysicsTools.HeppyCore.framework.config as cfg
 from PhysicsTools.HeppyCore.utils.deltar import * 
@@ -33,7 +33,15 @@ class LeptonAnalyzer( Analyzer ):
         else:
             self.cfg_ana.doMuScleFitCorrections = False
 	#FIXME: only Embedded works
-        self.electronEnergyCalibrator = EmbeddedElectronCalibrator()
+        if self.cfg_ana.doElectronScaleCorrections:
+            conf = cfg_ana.doElectronScaleCorrections
+            self.electronEnergyCalibrator = Run2ElectronCalibrator(
+                conf['scales']    if 'scales'    in conf else [ 0.99544,0.99882,0.99662,1.0065,0.98633,0.99536,0.97859,0.98567,0.98633, 0.99536 ],
+                conf['smearings'] if 'smearings' in conf else [ 0.013654,0.014142,0.020859,0.017120,0.028083,0.027289,0.031793,0.030831,0.028083, 0.027289 ],
+                conf['GBRForest'],
+                cfg_comp.isMC,
+                conf['isSync'] if 'isSync' in conf else False,
+            )
 #        if hasattr(cfg_comp,'efficiency'):
 #            self.efficiency= EfficiencyCorrector(cfg_comp.efficiency)
         # Isolation cut
@@ -339,24 +347,24 @@ class LeptonAnalyzer( Analyzer ):
               elif aeta < 2.200: ele.EffectiveArea04 = 0.1565 
               else:              ele.EffectiveArea04 = 0.2680
           elif self.eleEffectiveArea == "Spring15_50ns_v1":
-              aeta = abs(ele.eta())
+              SCEta = abs(ele.superCluster().eta())
               ## ----- https://github.com/ikrav/cmssw/blob/egm_id_747_v2/RecoEgamma/ElectronIdentification/data/Spring15/effAreaElectrons_cone03_pfNeuHadronsAndPhotons_50ns.txt
-              if   aeta < 0.800: ele.EffectiveArea03 = 0.0973
-              elif aeta < 1.300: ele.EffectiveArea03 = 0.0954
-              elif aeta < 2.000: ele.EffectiveArea03 = 0.0632
-              elif aeta < 2.200: ele.EffectiveArea03 = 0.0727
+              if   SCEta < 0.800: ele.EffectiveArea03 = 0.0973
+              elif SCEta < 1.300: ele.EffectiveArea03 = 0.0954
+              elif SCEta < 2.000: ele.EffectiveArea03 = 0.0632
+              elif SCEta < 2.200: ele.EffectiveArea03 = 0.0727
               else:              ele.EffectiveArea03 = 0.1337
               # warning: EAs not computed for cone DR=0.4 yet. Do not correct
               ele.EffectiveArea04 = 0.0
           elif self.eleEffectiveArea == "Spring15_25ns_v1":
-              aeta = abs(ele.eta())
+              SCEta = abs(ele.superCluster().eta())
               ## ----- https://github.com/ikrav/cmssw/blob/egm_id_747_v2/RecoEgamma/ElectronIdentification/data/Spring15/effAreaElectrons_cone03_pfNeuHadronsAndPhotons_25ns.txt
-              if   aeta < 1.000: ele.EffectiveArea03 = 0.1752
-              elif aeta < 1.479: ele.EffectiveArea03 = 0.1862
-              elif aeta < 2.000: ele.EffectiveArea03 = 0.1411
-              elif aeta < 2.200: ele.EffectiveArea03 = 0.1534
-              elif aeta < 2.300: ele.EffectiveArea03 = 0.1903
-              elif aeta < 2.400: ele.EffectiveArea03 = 0.2243
+              if   SCEta < 1.000: ele.EffectiveArea03 = 0.1752
+              elif SCEta < 1.479: ele.EffectiveArea03 = 0.1862
+              elif SCEta < 2.000: ele.EffectiveArea03 = 0.1411
+              elif SCEta < 2.200: ele.EffectiveArea03 = 0.1534
+              elif SCEta < 2.300: ele.EffectiveArea03 = 0.1903
+              elif SCEta < 2.400: ele.EffectiveArea03 = 0.2243
               else:              ele.EffectiveArea03 = 0.2687
               # warning: EAs not computed for cone DR=0.4 yet. Do not correct
               ele.EffectiveArea04 = 0.0
@@ -538,7 +546,9 @@ class LeptonAnalyzer( Analyzer ):
                 lep.mcMatchAny = 0
             # fix case where the matching with the only prompt leptons failed, but we still ended up with a prompt match
             if gen != None and hasattr(lep,'mcMatchId') and lep.mcMatchId == 0:
-                if isPromptLepton(gen, False): lep.mcMatchId = 100
+                if isPromptLepton(gen, False):
+                    lep.mcMatchId = 100
+                    lep.mcLep = gen
             elif not hasattr(lep,'mcMatchId'):
                 lep.mcMatchId = 0
             if not hasattr(lep,'mcMatchTau'): lep.mcMatchTau = 0
