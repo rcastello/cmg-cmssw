@@ -1,5 +1,3 @@
-####### test cut flow (for PHYS14) -R.C.
-
 jets with pT>30 : nJet30>0
 jet acceptance : Jet1_pt>150.0 && abs(Jet1_eta)<2.4
 met : met_pt > 200
